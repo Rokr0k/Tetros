@@ -11,6 +11,8 @@ static SDL_Renderer* renderer;
 
 static enum SceneType sceneId;
 
+static Mix_Music* music;
+
 static void SceneInit();
 static void SceneQuit();
 
@@ -23,6 +25,10 @@ void Game_Init(SDL_Window* window)
 	Mix_Init(MIX_INIT_OGG);
 	sceneId = TITLE;
 	SceneInit(NULL);
+
+	Mix_OpenAudio(22050, MIX_DEFAULT_FORMAT, 1, 2048);
+	music = Mix_LoadMUS("res/backgroundmusic.ogg");
+	Mix_PlayMusic(music, -1);
 }
 
 void Game_Event(SDL_Event* event)
@@ -77,6 +83,9 @@ void Game_Quit()
 	SceneQuit();
 	Font_Quit();
 	IMG_Quit();
+	Mix_HaltMusic();
+	Mix_FreeMusic(music);
+	Mix_CloseAudio();
 	Mix_Quit();
 }
 

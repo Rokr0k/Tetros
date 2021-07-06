@@ -1,7 +1,6 @@
 #include <SDL.h>
 #include <SDL_image.h>
 #include <SDL_ttf.h>
-#include <SDL_mixer.h>
 #include "playScene.h"
 #include "font.h"
 #include "tetris.h"
@@ -10,14 +9,14 @@
 static void setRectPos(SDL_Rect* rect, int x, int y, int w, int h);
 
 static const float gravity[30][2] = {
-	{ 1.f / 48, 10.f / 48 },
-	{ 1.f / 43, 10.f / 43 },
-	{ 1.f / 38, 10.f / 38 },
-	{ 1.f / 33, 10.f / 33 },
-	{ 1.f / 28, 10.f / 28 },
-	{ 1.f / 23, 10.f / 23 },
+	{ 1.f / 30, 1.f / 3 },
+	{ 1.f / 27, 10.f / 27 },
+	{ 1.f / 24, 10.f / 24 },
+	{ 1.f / 21, 10.f / 21 },
 	{ 1.f / 18, 10.f / 18 },
-	{ 1.f / 13, 10.f / 13 },
+	{ 1.f / 16, 10.f / 16 },
+	{ 1.f / 14, 10.f / 14 },
+	{ 1.f / 12, 10.f / 12 },
 	{ 1.f / 8, 10.f / 8 },
 	{ 1.f / 6, 10.f / 6 },
 	{ 1.f / 5, 10.f / 5 },
@@ -51,10 +50,10 @@ static float lockDelay = 1.f / 30;
 static float lockCounter;
 
 static int rightFlag;
-static float rightDelay = 1.f / 3;
+static float rightInterval = 1.f / 3;
 static float rightCounter;
 static int leftFlag;
-static float leftDelay = 1.f / 3;
+static float leftInterval = 1.f / 3;
 static float leftCounter;
 
 static int nextWait;
@@ -101,11 +100,11 @@ static void init();
 void PlayScene_Init(SDL_Renderer* renderer)
 {
 	init();
-	tileTexture = IMG_LoadTexture(renderer, "res/Tile.png");
+	tileTexture = IMG_LoadTexture(renderer, "res/tile.png");
 	SDL_SetTextureBlendMode(tileTexture, SDL_BLENDMODE_BLEND);
-	tetrominosTexture = IMG_LoadTexture(renderer, "res/Tetrominos.png");
+	tetrominosTexture = IMG_LoadTexture(renderer, "res/tetrominos.png");
 	SDL_SetTextureBlendMode(tetrominosTexture, SDL_BLENDMODE_BLEND);
-	holdUnavTexture = IMG_LoadTexture(renderer, "res/HoldUnavailable.png");
+	holdUnavTexture = IMG_LoadTexture(renderer, "res/holdunav.png");
 	SDL_SetTextureBlendMode(holdUnavTexture, SDL_BLENDMODE_BLEND);
 	SDL_Color white = { 0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE };
 	SDL_Surface* temp = TTF_RenderText_Solid(Font_GetFont(), "Score: 0", white);
@@ -328,10 +327,10 @@ void PlayScene_Update(double delta)
 				if (Tetris_ClearFullLine())
 				{
 					int technique = Tetris_GetTechnique();
-					score += scoreTable[technique] * (levelCnt / 10);
+					score += scoreTable[technique] * (levelCnt / 10 + 1);
 					if (lineCleared[technique])
 					{
-						score += 50 * combo++ * (levelCnt / 10);
+						score += 50 * combo++ * (levelCnt / 10 + 1);
 						levelCnt += lineCleared[technique];
 					}
 					else
@@ -356,7 +355,7 @@ void PlayScene_Update(double delta)
 		{
 			if (rightFlag)
 			{
-				rightCounter += (float)delta * 60 * rightDelay;
+				rightCounter += (float)delta * 60 * rightInterval;
 				while (rightCounter > 1.f)
 				{
 					rightCounter -= 1.f;
@@ -365,7 +364,7 @@ void PlayScene_Update(double delta)
 			}
 			if (leftFlag)
 			{
-				leftCounter += (float)delta * 60 * leftDelay;
+				leftCounter += (float)delta * 60 * leftInterval;
 				while (leftCounter > 1.f)
 				{
 					leftCounter -= 1.f;
@@ -509,7 +508,7 @@ void PlayScene_Render(SDL_Renderer* renderer)
 	}
 	rect.h = h / 10;
 	rect.w = levelTextureW * rect.h / levelTextureH;
-	rect.x = w / 4 - rect.w;
+	rect.x = h/22;
 	rect.y = h * 4 / 5 - rect.h / 2;
 	SDL_RenderCopy(renderer, levelTexture, NULL, &rect);
 
@@ -527,7 +526,7 @@ void PlayScene_Render(SDL_Renderer* renderer)
 	}
 	rect.h = h / 10;
 	rect.w = scoreTextureW * rect.h / scoreTextureH;
-	rect.x = w / 4 - rect.w;
+	rect.x = h/22;
 	rect.y = h * 9 / 10 - rect.h / 2;
 	SDL_RenderCopy(renderer, scoreTexture, NULL, &rect);
 }

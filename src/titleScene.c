@@ -1,7 +1,6 @@
 #include <SDL.h>
 #include <SDL_image.h>
 #include <SDL_ttf.h>
-#include <SDL_mixer.h>
 #include "titleScene.h"
 #include "font.h"
 #include "game.h"
@@ -17,7 +16,7 @@ static void quitGame();
 
 void TitleScene_Init(SDL_Renderer* renderer)
 {
-	titleTexture = IMG_LoadTexture(renderer, "res/Title.png");
+	titleTexture = IMG_LoadTexture(renderer, "res/title.png");
 	SDL_Color black = { 0x00, 0x00, 0x00, 0xFF };
 	SDL_Surface* temp = TTF_RenderText_Solid(Font_GetFont(), "Start", black);
 	singleButtonText = SDL_CreateTextureFromSurface(renderer, temp);

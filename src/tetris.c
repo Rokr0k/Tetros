@@ -588,11 +588,11 @@ void Tetris_PullEmptyLine()
 	int i, j, k = 0;
 	for (i = 0; i < 40; i++)
 	{
-		while (linesExecuted[i+k])
+		while (i + k < 40 && linesExecuted[i+k])
 			k++;
 		for (j = 0; j < 10; j++)
 		{
-			matrix[i][j] = matrix[i + k][j];
+			matrix[i][j] = i + k < 40 ? matrix[i + k][j] : 0;
 		}
 	}
 	clearing = 0;
