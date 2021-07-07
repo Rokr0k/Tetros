@@ -1,14 +1,12 @@
 #include <SDL.h>
-#include "game.h"
 #include <SDL_image.h>
 #include <SDL_ttf.h>
+#include "game.h"
 
 
 int main(int argc, char* args[])
 {
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER);
-
-	SDL_GameControllerAddMappingsFromFile("res/gamecontrollerdb.txt");
 
 #ifdef _DEBUG
 	SDL_Window* window = SDL_CreateWindow("Tetros", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, 0);
@@ -34,7 +32,7 @@ int main(int argc, char* args[])
 				Game_Event(&event);
 			}
 		}
-		Game_Update((SDL_GetPerformanceCounter() - counter) * 1. / SDL_GetPerformanceFrequency());
+		Game_Update((double)(SDL_GetPerformanceCounter() - counter) / SDL_GetPerformanceFrequency());
 		counter = SDL_GetPerformanceCounter();
 		Game_Render();
 	}

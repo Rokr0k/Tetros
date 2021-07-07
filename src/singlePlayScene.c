@@ -1,7 +1,7 @@
 #include <SDL.h>
 #include <SDL_image.h>
 #include <SDL_ttf.h>
-#include "playScene.h"
+#include "singlePlayScene.h"
 #include "font.h"
 #include "tetris.h"
 #include "game.h"
@@ -9,14 +9,14 @@
 static void setRectPos(SDL_Rect* rect, int x, int y, int w, int h);
 
 static const float gravity[30][2] = {
-	{ 1.f / 30, 1.f / 3 },
-	{ 1.f / 27, 10.f / 27 },
-	{ 1.f / 24, 10.f / 24 },
-	{ 1.f / 21, 10.f / 21 },
+	{ 1.f / 48, 10.f / 48 },
+	{ 1.f / 43, 10.f / 43 },
+	{ 1.f / 38, 10.f / 38 },
+	{ 1.f / 33, 10.f / 33 },
+	{ 1.f / 28, 10.f / 28 },
+	{ 1.f / 23, 10.f / 23 },
 	{ 1.f / 18, 10.f / 18 },
-	{ 1.f / 16, 10.f / 16 },
-	{ 1.f / 14, 10.f / 14 },
-	{ 1.f / 12, 10.f / 12 },
+	{ 1.f / 13, 10.f / 13 },
 	{ 1.f / 8, 10.f / 8 },
 	{ 1.f / 6, 10.f / 6 },
 	{ 1.f / 5, 10.f / 5 },
@@ -46,27 +46,27 @@ static const int lineCleared[20] = { 0, 1, 2, 3, 4, 4, 0, 1, 2, 3, 0, 1, 2, 3, 0
 static int softDrop;
 static float fallCounter;
 
-static float lockDelay = 1.f / 30;
+static const float lockDelay = 1.f / 30;
 static float lockCounter;
 
 static int rightFlag;
-static float rightInterval = 1.f / 3;
+static const float rightInterval = 1.f / 3;
 static float rightCounter;
 static int leftFlag;
-static float leftInterval = 1.f / 3;
+static const float leftInterval = 1.f / 3;
 static float leftCounter;
 
 static int nextWait;
-static float nextDelay = 1.f / 30;
+static const float nextDelay = 1.f / 30;
 static float nextCounter;
 
 static int gameover;
-static float gameoverDelay = 1.f / 90;
+static const float gameoverDelay = 1.f / 90;
 static float gameoverCounter;
 
 static SDL_Texture* tileTexture;
 static SDL_Texture* tetrominosTexture;
-static SDL_Rect tetrominosSplit[7] = {
+static const SDL_Rect tetrominosSplit[7] = {
 	{0, 64, 256, 64},
 	{256, 0, 192, 128},
 	{448, 0, 192, 128},
@@ -97,7 +97,7 @@ static int levelChanged;
 
 static void init();
 
-void PlayScene_Init(SDL_Renderer* renderer)
+void SinglePlayScene_Init(SDL_Renderer* renderer)
 {
 	init();
 	tileTexture = IMG_LoadTexture(renderer, "res/tile.png");
@@ -106,21 +106,12 @@ void PlayScene_Init(SDL_Renderer* renderer)
 	SDL_SetTextureBlendMode(tetrominosTexture, SDL_BLENDMODE_BLEND);
 	holdUnavTexture = IMG_LoadTexture(renderer, "res/holdunav.png");
 	SDL_SetTextureBlendMode(holdUnavTexture, SDL_BLENDMODE_BLEND);
-	SDL_Color white = { 0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE };
-	SDL_Surface* temp = TTF_RenderText_Solid(Font_GetFont(), "Score: 0", white);
-	scoreTexture = SDL_CreateTextureFromSurface(renderer, temp);
-	SDL_FreeSurface(temp);
+	scoreTexture = Font_GetTexture(renderer, "Score: 0", 0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE);
 	SDL_QueryTexture(scoreTexture, NULL, NULL, &scoreTextureW, &scoreTextureH);
-	temp = TTF_RenderText_Solid(Font_GetFont(), "Level: 0", white);
-	levelTexture = SDL_CreateTextureFromSurface(renderer, temp);
-	SDL_FreeSurface(temp);
+	levelTexture = Font_GetTexture(renderer, "Level: 0", 0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE);
 	SDL_QueryTexture(levelTexture, NULL, NULL, &levelTextureW, &levelTextureH);
-	temp = TTF_RenderText_Solid(Font_GetFont(), "Hold", white);
-	holdDescTexture = SDL_CreateTextureFromSurface(renderer, temp);
-	SDL_FreeSurface(temp);
-	temp = TTF_RenderText_Solid(Font_GetFont(), "Next", white);
-	previewDescTexture = SDL_CreateTextureFromSurface(renderer, temp);
-	SDL_FreeSurface(temp);
+	holdDescTexture = Font_GetTexture(renderer, "Hold", 0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE);
+	previewDescTexture = Font_GetTexture(renderer, "Next", 0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE);
 }
 
 static void init()
@@ -144,7 +135,7 @@ static void init()
 	Tetris_Init();
 }
 
-void PlayScene_Event(SDL_Event* event)
+void SinglePlayScene_Event(SDL_Event* event)
 {
 	switch (event->type)
 	{
@@ -274,7 +265,7 @@ void PlayScene_Event(SDL_Event* event)
 	}
 }
 
-void PlayScene_Update(double delta)
+void SinglePlayScene_Update(double delta)
 {
 	if (gameover)
 	{
@@ -304,7 +295,7 @@ void PlayScene_Update(double delta)
 		}
 		else
 		{
-			fallCounter += (float)delta * 60 * gravity[SDL_min(levelCnt / 10, 29)][softDrop];;
+			fallCounter += (float)delta * 60 * gravity[SDL_min(levelCnt / 10, 29)][softDrop];
 			if (!Tetris_Fallable())
 				lockCounter += (float)delta * 60 * lockDelay;
 			while (fallCounter > 1.f)
@@ -375,7 +366,7 @@ void PlayScene_Update(double delta)
 	}
 }
 
-void PlayScene_Render(SDL_Renderer* renderer)
+void SinglePlayScene_Render(SDL_Renderer* renderer)
 {
 	int w, h;
 	SDL_GetRendererOutputSize(renderer, &w, &h);
@@ -497,12 +488,10 @@ void PlayScene_Render(SDL_Renderer* renderer)
 	if (levelChanged)
 	{
 		SDL_Color white = { 0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE };
-		SDL_DestroyTexture(levelTexture);
 		char levelText[19] = "Level: ";
 		SDL_itoa(levelCnt / 10, levelText + 7, 10);
-		SDL_Surface* temp = TTF_RenderText_Solid(Font_GetFont(), levelText, white);
-		levelTexture = SDL_CreateTextureFromSurface(renderer, temp);
-		SDL_FreeSurface(temp);
+		SDL_DestroyTexture(levelTexture);
+		levelTexture = Font_GetTexture(renderer, levelText, 0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE);
 		SDL_QueryTexture(levelTexture, NULL, NULL, &levelTextureW, &levelTextureH);
 		levelChanged = 0;
 	}
@@ -515,12 +504,10 @@ void PlayScene_Render(SDL_Renderer* renderer)
 	if (scoreChanged)
 	{
 		SDL_Color white = { 0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE };
-		SDL_DestroyTexture(scoreTexture);
 		char scoreText[19] = "Score: ";
 		SDL_itoa(score, scoreText + 7, 10);
-		SDL_Surface* temp = TTF_RenderText_Solid(Font_GetFont(), scoreText, white);
-		scoreTexture = SDL_CreateTextureFromSurface(renderer, temp);
-		SDL_FreeSurface(temp);
+		SDL_DestroyTexture(scoreTexture);
+		scoreTexture = Font_GetTexture(renderer, scoreText, 0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE);
 		SDL_QueryTexture(scoreTexture, NULL, NULL, &scoreTextureW, &scoreTextureH);
 		scoreChanged = 0;
 	}
@@ -531,12 +518,13 @@ void PlayScene_Render(SDL_Renderer* renderer)
 	SDL_RenderCopy(renderer, scoreTexture, NULL, &rect);
 }
 
-void PlayScene_Quit()
+void SinglePlayScene_Quit()
 {
 	SDL_DestroyTexture(tileTexture);
 	SDL_DestroyTexture(tetrominosTexture);
 	SDL_DestroyTexture(scoreTexture);
 	SDL_DestroyTexture(levelTexture);
+	SDL_DestroyTexture(holdUnavTexture);
 	SDL_DestroyTexture(holdDescTexture);
 	SDL_DestroyTexture(previewDescTexture);
 }

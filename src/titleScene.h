@@ -3,6 +3,7 @@
 
 void TitleScene_Init(SDL_Renderer* renderer);
 void TitleScene_Event(SDL_Event* event);
+void TitleScene_Update(double delta);
 void TitleScene_Render(SDL_Renderer* renderer);
 void TitleScene_Quit();
 
