@@ -13,7 +13,7 @@ void MultiServerScene_Init(SDL_Renderer* renderer)
 {
 	SDLNet_Init();
 	socket = SDLNet_UDP_Open(37646);
-	packet = SDLNet_AllocPacket(512);
+	packet = SDLNet_AllocPacket(5);
 
 	textTexture = Font_GetTexture(renderer, "Please wait", 0xFF, 0x00, 0x00, SDL_ALPHA_OPAQUE);
 }

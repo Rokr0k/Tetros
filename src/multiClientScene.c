@@ -32,7 +32,7 @@ void MultiClientScene_Init(SDL_Renderer* renderer)
 	cursorY = 360;
 	SDLNet_Init();
 	socket = SDLNet_UDP_Open(0);
-	packet = SDLNet_AllocPacket(512);
+	packet = SDLNet_AllocPacket(5);
 	load();
 	textTexture = Font_GetTexture(renderer, "Please Wait", 0x00, 0xFF, 0x00, SDL_ALPHA_OPAQUE);
 }

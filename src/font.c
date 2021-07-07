@@ -7,7 +7,7 @@ static TTF_Font* font;
 void Font_Init()
 {
 	TTF_Init();
-	font = TTF_OpenFont("res/ComicSans.ttf", 60);
+	font = TTF_OpenFont("res/AtariClassic.ttf", 60);
 }
 
 SDL_Texture* Font_GetTexture(SDL_Renderer* renderer, const char* text, Uint8 r, Uint8 g, Uint8 b, Uint8 a)

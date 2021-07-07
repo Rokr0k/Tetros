@@ -496,7 +496,7 @@ void SinglePlayScene_Render(SDL_Renderer* renderer)
 		levelChanged = 0;
 	}
 	rect.h = h / 10;
-	rect.w = levelTextureW * rect.h / levelTextureH;
+	rect.w = levelTextureW * rect.h / levelTextureH / 3;
 	rect.x = h/22;
 	rect.y = h * 4 / 5 - rect.h / 2;
 	SDL_RenderCopy(renderer, levelTexture, NULL, &rect);
@@ -512,7 +512,7 @@ void SinglePlayScene_Render(SDL_Renderer* renderer)
 		scoreChanged = 0;
 	}
 	rect.h = h / 10;
-	rect.w = scoreTextureW * rect.h / scoreTextureH;
+	rect.w = scoreTextureW * rect.h / scoreTextureH / 3;
 	rect.x = h/22;
 	rect.y = h * 9 / 10 - rect.h / 2;
 	SDL_RenderCopy(renderer, scoreTexture, NULL, &rect);
