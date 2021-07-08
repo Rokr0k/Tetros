@@ -3,7 +3,7 @@
 #include "multiServerScene.h"
 #include "game.h"
 #include "font.h"
-#include "multiAddress.h"
+#include "multiPlayScene.h"
 
 static UDPsocket socket;
 static UDPpacket* packet;
@@ -48,9 +48,8 @@ void MultiServerScene_Update(double delta)
 			case 'e':
 				packet->data[2] = 's';
 				SDLNet_UDP_Send(socket, -1, packet);
-				SDLNet_Write16(37645, &packet->address.port);
+				SDLNet_Write16(37646, &packet->address.port);
 				MultiPlayScene_SetPeer(packet->address);
-				MultiPlayScene_IsClient(0);
 				Game_ChangeScene(MULTI_PLAY);
 				break;
 			}

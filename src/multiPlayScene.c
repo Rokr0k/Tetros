@@ -82,29 +82,15 @@ static void sendCurrent();
 static void sendGarbages(int c);
 static void sendGameover();
 
-static int isClient;
-
 void MultiPlayScene_SetPeer(IPaddress address)
 {
 	ip = address;
 }
 
-void MultiPlayScene_IsClient(int yes)
-{
-	isClient = yes;
-}
-
 void MultiPlayScene_Init(SDL_Renderer* renderer)
 {
 	SDLNet_Init();
-	if (isClient)
-	{
-		socket = SDLNet_UDP_Open(37645);
-	}
-	else
-	{
-		socket = SDLNet_UDP_Open(37646);
-	}
+	socket = SDLNet_UDP_Open(37646);
 	packet = SDLNet_AllocPacket(512);
 	tileTexture = IMG_LoadTexture(renderer, "res/tile.png");
 	SDL_SetTextureBlendMode(tileTexture, SDL_BLENDMODE_BLEND);
