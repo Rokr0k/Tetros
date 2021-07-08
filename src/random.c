@@ -3,6 +3,7 @@
 #include <time.h>
 
 static int bag[7];
+static int gb;
 
 static void fillBag();
 
@@ -10,6 +11,7 @@ void Random_Init()
 {
 	srand((unsigned int)time(NULL));
 	fillBag();
+	gb = -1;
 }
 
 int Random_Bag()
@@ -26,6 +28,27 @@ int Random_Bag()
 	}
 	fillBag();
 	return Random_Bag();
+}
+
+int Random_Garbage()
+{
+	if (gb < 0)
+	{
+		gb = rand() % 10;
+		return gb;
+	}
+	else
+	{
+		if (rand() % 5 < 1)
+		{
+			return gb;
+		}
+		else
+		{
+			gb = rand() % 10;
+			return gb;
+		}
+	}
 }
 
 static void fillBag()

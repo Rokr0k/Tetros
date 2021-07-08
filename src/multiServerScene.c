@@ -3,6 +3,7 @@
 #include "multiServerScene.h"
 #include "game.h"
 #include "font.h"
+#include "multiAddress.h"
 
 static UDPsocket socket;
 static UDPpacket* packet;
@@ -14,7 +15,6 @@ void MultiServerScene_Init(SDL_Renderer* renderer)
 	SDLNet_Init();
 	socket = SDLNet_UDP_Open(37646);
 	packet = SDLNet_AllocPacket(5);
-
 	textTexture = Font_GetTexture(renderer, "Please wait", 0xFF, 0x00, 0x00, SDL_ALPHA_OPAQUE);
 }
 
@@ -48,6 +48,9 @@ void MultiServerScene_Update(double delta)
 			case 'e':
 				packet->data[2] = 's';
 				SDLNet_UDP_Send(socket, -1, packet);
+				SDLNet_Write16(37646, &packet->address.port);
+				MultiPlayScene_SetPeer(packet->address);
+				Game_ChangeScene(MULTI_PLAY);
 				break;
 			}
 		}

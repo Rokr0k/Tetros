@@ -279,7 +279,7 @@ static int isTSpin;
 static int isMiniTSpin;
 static int backToBack;
 
-static int technique;
+static enum Technique technique;
 
 void Tetris_Init()
 {
@@ -304,7 +304,7 @@ void Tetris_Init()
 	hold = -1;
 	holdFlag = 0;
 	clearing = 0;
-	technique = 0;
+	technique = Tech_None;
 	setGhostY();
 }
 
@@ -477,30 +477,7 @@ void Tetris_Lock()
 	holdFlag = 0;
 }
 
-/*
- * 0: None
- * 1: Single
- * 2: Double
- * 3: Triple
- * 4: Tetris
- * 5: BTB Tetris
- * 6: T-Spin
- * 7: T-Spin Single
- * 8: T-Spin Double
- * 9: T-Spin Triple
- * 10: BTB T-Spin
- * 11: BTB T-Spin Single
- * 12: BTB T-Spin Double
- * 13: BTB T-Spin Triple
- * 14: T-Spin Mini
- * 15: T-Spin Single Mini
- * 16: T-Spin Double Mini
- * 17: BTB T-Spin Mini
- * 18: BTB T-Spin Single Mini
- * 19: BTB T-Spin Double Mini
- * 20: Game Over
- */
-int Tetris_GetTechnique()
+enum Technique Tetris_GetTechnique()
 {
 	return technique;
 }
@@ -536,24 +513,24 @@ int Tetris_ClearFullLine()
 		}
 	}
 
-	technique = 0;
+	technique = Tech_None;
 	if (clearing)
 	{
 		if (isTSpin)
 		{
 			if (backToBack)
-				technique = 10 + cnt;
+				technique = Tech_B_TSpin + cnt;
 			else
-				technique = 6 + cnt;
+				technique = Tech_TSpin + cnt;
 			if (clearing)
 				backToBack = 1;
 		}
 		else if (isMiniTSpin)
 		{
 			if (backToBack)
-				technique = 17 + cnt;
+				technique = Tech_B_TSpinM + cnt;
 			else
-				technique = 14 + cnt;
+				technique = Tech_TSpinM + cnt;
 			if (clearing)
 				backToBack = 1;
 		}
@@ -561,16 +538,16 @@ int Tetris_ClearFullLine()
 		{
 			if (cnt < 4)
 			{
-				technique = cnt;
+				technique = Tech_None + cnt;
 				if (clearing)
 					backToBack = 0;
 			}
 			else if (cnt == 4)
 			{
 				if (backToBack)
-					technique = 5;
+					technique = Tech_B_Tetris;
 				else
-					technique = 4;
+					technique = Tech_Tetris;
 				backToBack = 1;
 			}
 		}
@@ -648,6 +625,7 @@ int Tetris_Next()
 {
 	if (!Tetris_Verify(initialPos[previewQueue[previewI]][0], initialPos[previewQueue[previewI]][1], 0))
 	{
+		technique = Tech_Gameover;
 		return 0;
 	}
 	currentType = previewQueue[previewI];
@@ -663,6 +641,39 @@ int Tetris_Next()
 int Tetris_GhostY()
 {
 	return ghostY;
+}
+
+int Tetris_Garbage()
+{
+	int c = Random_Garbage();
+	int i, j;
+	for (i = 0; i < 10; i++)
+	{
+		if (matrix[39][i])
+		{
+			technique = Tech_Gameover;
+			return 0;
+		}
+	}
+	for (i = 39; i > 0; i--)
+	{
+		for (j = 0; j < 10; j++)
+		{
+			matrix[i][j] = matrix[i - 1][j];
+		}
+	}
+	for (i = 0; i < 10; i++)
+	{
+		if (i == c)
+		{
+			matrix[0][i] = 0;
+		}
+		else
+		{
+			matrix[0][i] = 8;
+		}
+	}
+	return 1;
 }
 
 static void setGhostY()

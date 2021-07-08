@@ -1,46 +1,21 @@
 #include <SDL.h>
 #include <SDL_image.h>
-#include <SDL_ttf.h>
-#include "singlePlayScene.h"
-#include "font.h"
+#include <SDL_net.h>
+#include "multiPlayScene.h"
 #include "tetris.h"
 #include "game.h"
+#include "font.h"
 
 static void setRectPos(SDL_Rect* rect, int x, int y, int w, int h);
+static void setPeerRectPos(SDL_Rect* rect, int x, int y, int w, int h);
 
-static const float gravity[30][2] = {
-	{ 1.f / 48, 10.f / 48 },
-	{ 1.f / 43, 10.f / 43 },
-	{ 1.f / 38, 10.f / 38 },
-	{ 1.f / 33, 10.f / 33 },
-	{ 1.f / 28, 10.f / 28 },
-	{ 1.f / 23, 10.f / 23 },
-	{ 1.f / 18, 10.f / 18 },
-	{ 1.f / 13, 10.f / 13 },
-	{ 1.f / 8, 10.f / 8 },
-	{ 1.f / 6, 10.f / 6 },
-	{ 1.f / 5, 10.f / 5 },
-	{ 1.f / 5, 10.f / 5 },
-	{ 1.f / 5, 10.f / 5 },
-	{ 1.f / 5, 10.f / 5 },
-	{ 1.f / 4, 10.f / 4 },
-	{ 1.f / 4, 10.f / 4 },
-	{ 1.f / 4, 10.f / 4 },
-	{ 1.f / 4, 10.f / 4 },
-	{ 1.f / 3, 10.f / 3 },
-	{ 1.f / 3, 10.f / 3 },
-	{ 1.f / 3, 10.f / 3 },
-	{ 1.f / 3, 10.f / 3 },
-	{ 1.f / 2, 10.f / 2 },
-	{ 1.f / 2, 10.f / 2 },
-	{ 1.f / 2, 10.f / 2 },
-	{ 1.f / 2, 10.f / 2 },
-	{ 1.f, 10.f },
-	{ 1.f, 10.f },
-	{ 1.f, 10.f },
+static const float gravity[5][2] = {
+	{ 1.f / 30, 10.f / 30 },
+	{ 1.f / 20, 10.f / 20 },
+	{ 1.f / 10, 10.f / 10 },
+	{ 1.f / 1, 10.f / 1 },
 	{ 20.f, 20.f },
 };
-static const int scoreTable[20] = { 0, 100, 300, 500, 800, 1200, 400, 800, 1200, 1600, 600, 1200, 1800, 2400, 100, 200, 400, 150, 300, 600 };
 static const int lineCleared[20] = { 0, 1, 2, 3, 4, 4, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 0, 1, 2 };
 
 static int softDrop;
@@ -83,35 +58,44 @@ static int combo;
 static SDL_Texture* holdDescTexture;
 static SDL_Texture* previewDescTexture;
 
-static int score;
-static SDL_Texture* scoreTexture;
-static int scoreTextureW;
-static int scoreTextureH;
-static int scoreChanged;
-
 static int levelCnt;
-static SDL_Texture* levelTexture;
-static int levelTextureW;
-static int levelTextureH;
-static int levelChanged;
 
 static void init();
 
-void SinglePlayScene_Init(SDL_Renderer* renderer)
+static UDPsocket socket;
+static IPaddress ip;
+static UDPpacket* packet;
+
+static int peerMatrix[40][10];
+
+static int garbageC;
+
+static int win;
+static int quit;
+
+static void sendCurrent();
+static void sendGarbages(int c);
+static void sendGameover();
+
+void MultiPlayScene_SetPeer(IPaddress address)
 {
-	init();
+	ip = address;
+}
+
+void MultiPlayScene_Init(SDL_Renderer* renderer)
+{
+	SDLNet_Init();
+	socket = SDLNet_UDP_Open(37646);
+	packet = SDLNet_AllocPacket(512);
 	tileTexture = IMG_LoadTexture(renderer, "res/tile.png");
 	SDL_SetTextureBlendMode(tileTexture, SDL_BLENDMODE_BLEND);
 	tetrominosTexture = IMG_LoadTexture(renderer, "res/tetrominos.png");
 	SDL_SetTextureBlendMode(tetrominosTexture, SDL_BLENDMODE_BLEND);
 	holdUnavTexture = IMG_LoadTexture(renderer, "res/holdunav.png");
 	SDL_SetTextureBlendMode(holdUnavTexture, SDL_BLENDMODE_BLEND);
-	scoreTexture = Font_GetTexture(renderer, "Score: 0", 0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE);
-	SDL_QueryTexture(scoreTexture, NULL, NULL, &scoreTextureW, &scoreTextureH);
-	levelTexture = Font_GetTexture(renderer, "Level: 0", 0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE);
-	SDL_QueryTexture(levelTexture, NULL, NULL, &levelTextureW, &levelTextureH);
 	holdDescTexture = Font_GetTexture(renderer, "Hold", 0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE);
 	previewDescTexture = Font_GetTexture(renderer, "Next", 0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE);
+	init();
 }
 
 static void init()
@@ -126,16 +110,15 @@ static void init()
 	nextWait = 0;
 	nextCounter = 0;
 	combo = 0;
-	score = 0;
-	scoreChanged = 0;
-	levelCnt = 0;
-	levelChanged = 0;
 	gameover = 0;
 	gameoverCounter = 0;
+	garbageC = 0;
+	win = 0;
+	quit = 0;
 	Tetris_Init();
 }
 
-void SinglePlayScene_Event(SDL_Event* event)
+void MultiPlayScene_Event(SDL_Event* event)
 {
 	switch (event->type)
 	{
@@ -175,12 +158,11 @@ void SinglePlayScene_Event(SDL_Event* event)
 			Tetris_Hold();
 			break;
 		case SDLK_SPACE:
-			score += Tetris_Harddrop() * 2;
+			Tetris_Harddrop();
 			lockCounter = 1.f;
-			scoreChanged = 1;
 			break;
 		case SDLK_ESCAPE:
-			Game_ChangeScene(TITLE);
+			Game_ChangeScene(MULTI_CONNECT);
 			break;
 		}
 		break;
@@ -228,12 +210,11 @@ void SinglePlayScene_Event(SDL_Event* event)
 			Tetris_Hold();
 			break;
 		case SDL_CONTROLLER_BUTTON_DPAD_UP:
-			score += Tetris_Harddrop() * 2;
+			Tetris_Harddrop();
 			lockCounter = 1.f;
-			scoreChanged = 1;
 			break;
 		case SDL_CONTROLLER_BUTTON_START:
-			Game_ChangeScene(TITLE);
+			Game_ChangeScene(MULTI_CONNECT);
 			break;
 		}
 		break;
@@ -265,14 +246,52 @@ void SinglePlayScene_Event(SDL_Event* event)
 	}
 }
 
-void SinglePlayScene_Update(double delta)
+void MultiPlayScene_Update(double delta)
 {
+	if (SDLNet_UDP_Recv(socket, packet) > 0)
+	{
+		if (packet->address.host == ip.host && packet->address.port == ip.port && packet->data[0] == 'T' && packet->data[1] == 'o' && packet->data[2] == 'p')
+		{
+			int i, j;
+			switch (packet->data[3])
+			{
+			case 'u':
+				for (i = 0; i < 40; i++)
+				{
+					for (j = 0; j < 10; j++)
+					{
+						peerMatrix[i][j] = packet->data[i * 10 + j + 4];
+					}
+				}
+				break;
+			case 'b':
+				garbageC += packet->data[4];
+				break;
+			case 'o':
+				gameover = 1;
+				win = 1;
+				break;
+			case 'q':
+				gameover = 1;
+				win = 1;
+				quit = 1;
+				break;
+			}
+		}
+	}
 	if (gameover)
 	{
 		gameoverCounter += (float)delta * 60 * gameoverDelay;
 		if (gameoverCounter > 1.f)
 		{
-			init();
+			if (quit)
+			{
+				Game_ChangeScene(MULTI_CONNECT);
+			}
+			else
+			{
+				init();
+			}
 		}
 	}
 	else
@@ -280,11 +299,20 @@ void SinglePlayScene_Update(double delta)
 		if (nextWait)
 		{
 			nextCounter += (float)delta * 60 * nextDelay;
+			if (garbageC > 0 && nextCounter > .5f)
+			{
+				if (Tetris_Garbage())
+				{
+					gameover = 1;
+				}
+				nextCounter = 0;
+			}
 			if (nextCounter > 1.f)
 			{
 				nextCounter = 0;
 				nextWait = 0;
 				Tetris_PullEmptyLine();
+				sendCurrent();
 				if (!Tetris_Next())
 				{
 					gameover = 1;
@@ -295,7 +323,7 @@ void SinglePlayScene_Update(double delta)
 		}
 		else
 		{
-			fallCounter += (float)delta * 60 * gravity[SDL_min(levelCnt / 10, 29)][softDrop];
+			fallCounter += (float)delta * 60 * gravity[SDL_min(levelCnt/10, 4)][softDrop];
 			if (!Tetris_Fallable())
 				lockCounter += (float)delta * 60 * lockDelay;
 			while (fallCounter > 1.f)
@@ -303,13 +331,9 @@ void SinglePlayScene_Update(double delta)
 				fallCounter -= 1.f;
 				if (Tetris_Fall())
 				{
-					if (softDrop)
-					{
-						score++;
-						scoreChanged = 1;
-					}
 					lockCounter = 0;
 				}
+				sendCurrent();
 			}
 			if (lockCounter > 1.f)
 			{
@@ -318,12 +342,53 @@ void SinglePlayScene_Update(double delta)
 				if (Tetris_ClearFullLine())
 				{
 					enum Technique technique = Tetris_GetTechnique();
-					score += scoreTable[technique] * (levelCnt / 10 + 1);
-					score += 50 * combo++ * (levelCnt / 10 + 1);
 					levelCnt += lineCleared[technique];
+					switch (technique)
+					{
+					case Tech_Double:
+						sendGarbages(1);
+						break;
+					case Tech_Triple:
+						sendGarbages(2);
+						break;
+					case Tech_Tetris:
+						sendGarbages(4);
+						break;
+					case Tech_B_Tetris:
+						sendGarbages(5);
+						break;
+					case Tech_TSpin_Single:
+						sendGarbages(2);
+						break;
+					case Tech_TSpin_Double:
+						sendGarbages(4);
+						break;
+					case Tech_TSpin_Triple:
+						sendGarbages(6);
+						break;
+					case Tech_B_TSpin_Single:
+						sendGarbages(3);
+						break;
+					case Tech_B_TSpin_Double:
+						sendGarbages(5);
+						break;
+					case Tech_B_TSpin_Triple:
+						sendGarbages(7);
+						break;
+					case Tech_TSpinM_Single:
+						sendGarbages(1);
+						break;
+					case Tech_TSpinM_Double:
+						sendGarbages(3);
+						break;
+					case Tech_B_TSpinM_Single:
+						sendGarbages(2);
+						break;
+					case Tech_B_TSpinM_Double:
+						sendGarbages(4);
+						break;
+					}
 					nextWait = 1;
-					scoreChanged = 1;
-					levelChanged = 1;
 				}
 				else
 				{
@@ -334,6 +399,7 @@ void SinglePlayScene_Update(double delta)
 					}
 					fallCounter = 0;
 				}
+				sendCurrent();
 			}
 		}
 		if (rightFlag ^ leftFlag)
@@ -345,6 +411,7 @@ void SinglePlayScene_Update(double delta)
 				{
 					rightCounter -= 1.f;
 					Tetris_Shift(1);
+					sendCurrent();
 				}
 			}
 			if (leftFlag)
@@ -354,13 +421,14 @@ void SinglePlayScene_Update(double delta)
 				{
 					leftCounter -= 1.f;
 					Tetris_Shift(-1);
+					sendCurrent();
 				}
 			}
 		}
 	}
 }
 
-void SinglePlayScene_Render(SDL_Renderer* renderer)
+void MultiPlayScene_Render(SDL_Renderer* renderer)
 {
 	int w, h;
 	SDL_GetRendererOutputSize(renderer, &w, &h);
@@ -371,12 +439,12 @@ void SinglePlayScene_Render(SDL_Renderer* renderer)
 		for (j = -1; j <= 40; j++)
 		{
 			setRectPos(&rect, i, j, w, h);
-			if (gameover)
+			if (gameover && !win)
 			{
 				int matrix = Tetris_Matrix(i, j);
-				if(matrix == -1)
+				if (matrix == -1)
 					SDL_SetTextureColorMod(tileTexture, 0xFF, 0xFF, 0xFF);
-				else if(matrix == 0)
+				else if (matrix == 0)
 					SDL_SetTextureColorMod(tileTexture, 0x00, 0x00, 0x00);
 				else
 					SDL_SetTextureColorMod(tileTexture, 0x80, 0x80, 0x80);
@@ -436,18 +504,94 @@ void SinglePlayScene_Render(SDL_Renderer* renderer)
 				}
 			}
 			SDL_RenderCopy(renderer, tileTexture, NULL, &rect);
+			setPeerRectPos(&rect, i, j, w, h);
+			if (gameover && win)
+			{
+				int matrix;
+				if (i < 0 || i >= 10 || j < 0 || j >= 40)
+					matrix = -1;
+				else
+					matrix = peerMatrix[j][i];
+				if (matrix == -1)
+					SDL_SetTextureColorMod(tileTexture, 0xFF, 0xFF, 0xFF);
+				else if (matrix == 0)
+					SDL_SetTextureColorMod(tileTexture, 0x00, 0x00, 0x00);
+				else
+					SDL_SetTextureColorMod(tileTexture, 0x80, 0x80, 0x80);
+			}
+			else
+			{
+				int matrix;
+				if (i < 0 || i >= 10 || j < 0 || j >= 40)
+					matrix = -1;
+				else
+					matrix = peerMatrix[j][i];
+				switch (matrix)
+				{
+				case -1:
+					SDL_SetTextureColorMod(tileTexture, 0xFF, 0xFF, 0xFF);
+					break;
+				case 0:
+					SDL_SetTextureColorMod(tileTexture, 0x00, 0x00, 0x00);
+					break;
+				case 1:
+					SDL_SetTextureColorMod(tileTexture, 0x00, 0xFF, 0xFF);
+					break;
+				case 2:
+					SDL_SetTextureColorMod(tileTexture, 0x00, 0x00, 0xFF);
+					break;
+				case 3:
+					SDL_SetTextureColorMod(tileTexture, 0xFF, 0x80, 0x00);
+					break;
+				case 4:
+					SDL_SetTextureColorMod(tileTexture, 0xFF, 0xFF, 0x00);
+					break;
+				case 5:
+					SDL_SetTextureColorMod(tileTexture, 0x00, 0xFF, 0x00);
+					break;
+				case 6:
+					SDL_SetTextureColorMod(tileTexture, 0xFF, 0x00, 0xFF);
+					break;
+				case 7:
+					SDL_SetTextureColorMod(tileTexture, 0xFF, 0x00, 0x00);
+					break;
+				case 11:
+					SDL_SetTextureColorMod(tileTexture, 0x00, 0x80, 0x80);
+					break;
+				case 12:
+					SDL_SetTextureColorMod(tileTexture, 0x00, 0x00, 0x80);
+					break;
+				case 13:
+					SDL_SetTextureColorMod(tileTexture, 0x80, 0x40, 0x00);
+					break;
+				case 14:
+					SDL_SetTextureColorMod(tileTexture, 0x80, 0x80, 0x00);
+					break;
+				case 15:
+					SDL_SetTextureColorMod(tileTexture, 0x00, 0x80, 0x00);
+					break;
+				case 16:
+					SDL_SetTextureColorMod(tileTexture, 0x80, 0x00, 0x80);
+					break;
+				case 17:
+					SDL_SetTextureColorMod(tileTexture, 0x80, 0x00, 0x00);
+					break;
+				}
+			}
+			SDL_RenderCopy(renderer, tileTexture, NULL, &rect);
 		}
 	}
 	SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE);
-	SDL_RenderDrawLine(renderer, w / 2 - h / 22 * 5, h / 2 - h / 22 * 10, w / 2 + h / 22 * 5, h / 2 - h / 22 * 10);
+	SDL_RenderDrawLine(renderer, w / 4 - h / 22 * 5, h / 2 - h / 22 * 10, w / 4 + h / 22 * 5, h / 2 - h / 22 * 10);
+	SDL_RenderDrawLine(renderer, w * 3 / 4 - h / 22 * 5, h / 2 - h / 22 * 10, w * 3 / 4 + h / 22 * 5, h / 2 - h / 22 * 10);
 
 	i = Tetris_WhatHold();
 	if (i >= 0)
 	{
 		rect.w = tetrominosSplit[i].w / 64 * h / 22;
 		rect.h = tetrominosSplit[i].h / 64 * h / 22;
-		rect.x = w / 4 - rect.w / 2;
-		rect.y = h * 2 / 11 - rect.h / 2;
+		rect.x = w / 2 - rect.w;
+		rect.y = h * 7 / 22 - rect.h / 2;
 		SDL_RenderCopy(renderer, tetrominosTexture, &tetrominosSplit[i], &rect);
 		if (Tetris_CanHold())
 		{
@@ -456,8 +600,8 @@ void SinglePlayScene_Render(SDL_Renderer* renderer)
 	}
 	rect.w = h * 3 / 22;
 	rect.h = h * 3 / 22;
-	rect.x = w / 4 - rect.w / 2;
-	rect.y = h / 22 - rect.h / 2;
+	rect.x = w / 2 - rect.w;
+	rect.y = h*4 / 22 - rect.h / 2;
 	SDL_RenderCopy(renderer, holdDescTexture, NULL, &rect);
 
 	for (i = 0; i < 5; i++)
@@ -465,53 +609,28 @@ void SinglePlayScene_Render(SDL_Renderer* renderer)
 		j = Tetris_Preview(i);
 		rect.w = tetrominosSplit[j].w / 64 * h / 22;
 		rect.h = tetrominosSplit[j].h / 64 * h / 22;
-		rect.x = w * 3 / 4 - rect.w / 2;
-		rect.y = h * (i * 3 + 4) / 22 - rect.h / 2;
+		rect.x = w / 2;
+		rect.y = h * (i * 3 + 7) / 22 - rect.h / 2;
 		SDL_RenderCopy(renderer, tetrominosTexture, &tetrominosSplit[j], &rect);
 	}
 	rect.w = h * 3 / 22;
 	rect.h = h * 3 / 22;
-	rect.x = w * 3 / 4 - rect.w / 2;
-	rect.y = h / 22 - rect.h / 2;
+	rect.x = w / 2;
+	rect.y = h * 4 / 22 - rect.h / 2;;
 	SDL_RenderCopy(renderer, previewDescTexture, NULL, &rect);
-
-	if (levelChanged)
-	{
-		char levelText[19] = "Level: ";
-		SDL_itoa(levelCnt / 10, levelText + 7, 10);
-		SDL_DestroyTexture(levelTexture);
-		levelTexture = Font_GetTexture(renderer, levelText, 0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE);
-		SDL_QueryTexture(levelTexture, NULL, NULL, &levelTextureW, &levelTextureH);
-		levelChanged = 0;
-	}
-	rect.h = h / 10;
-	rect.w = levelTextureW * rect.h / levelTextureH / 3;
-	rect.x = h/22;
-	rect.y = h * 4 / 5 - rect.h / 2;
-	SDL_RenderCopy(renderer, levelTexture, NULL, &rect);
-
-	if (scoreChanged)
-	{
-		char scoreText[19] = "Score: ";
-		SDL_itoa(score, scoreText + 7, 10);
-		SDL_DestroyTexture(scoreTexture);
-		scoreTexture = Font_GetTexture(renderer, scoreText, 0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE);
-		SDL_QueryTexture(scoreTexture, NULL, NULL, &scoreTextureW, &scoreTextureH);
-		scoreChanged = 0;
-	}
-	rect.h = h / 10;
-	rect.w = scoreTextureW * rect.h / scoreTextureH / 3;
-	rect.x = h/22;
-	rect.y = h * 9 / 10 - rect.h / 2;
-	SDL_RenderCopy(renderer, scoreTexture, NULL, &rect);
 }
 
-void SinglePlayScene_Quit()
+void MultiPlayScene_Quit()
 {
+	packet->address = ip;
+	SDL_strlcpy(packet->data, "Topq", packet->maxlen);
+	packet->len = 5;
+	SDLNet_UDP_Send(socket, -1, packet);
+	SDLNet_UDP_Close(socket);
+	SDLNet_FreePacket(packet);
+	SDLNet_Quit();
 	SDL_DestroyTexture(tileTexture);
 	SDL_DestroyTexture(tetrominosTexture);
-	SDL_DestroyTexture(scoreTexture);
-	SDL_DestroyTexture(levelTexture);
 	SDL_DestroyTexture(holdUnavTexture);
 	SDL_DestroyTexture(holdDescTexture);
 	SDL_DestroyTexture(previewDescTexture);
@@ -520,6 +639,46 @@ void SinglePlayScene_Quit()
 static void setRectPos(SDL_Rect* rect, int x, int y, int w, int h)
 {
 	rect->w = rect->h = h / 22;
-	rect->x = w / 2 + rect->w * (x - 5);
+	rect->x = w / 4 + rect->w * (x - 5);
 	rect->y = h / 2 - rect->h * (y - 9);
+}
+
+static void setPeerRectPos(SDL_Rect* rect, int x, int y, int w, int h)
+{
+	rect->w = rect->h = h / 22;
+	rect->x = w * 3 / 4 + rect->w * (x - 5);
+	rect->y = h / 2 - rect->h * (y - 9);
+}
+
+static void sendCurrent()
+{
+	packet->address = ip;
+	SDL_strlcpy(packet->data, "Topu", packet->maxlen);
+	int i, j;
+	for (i = 0; i < 40; i++)
+	{
+		for (j = 0; j < 10; j++)
+		{
+			packet->data[i + 10 + j + 4] = Tetris_Matrix(i, j);
+		}
+	}
+	packet->len = 404;
+	SDLNet_UDP_Send(socket, -1, packet);
+}
+
+static void sendGarbages(int c)
+{
+	packet->address = ip;
+	SDL_strlcpy(packet->data, "Topb", packet->maxlen);
+	packet->data[4] = c;
+	packet->len = 6;
+	SDLNet_UDP_Send(socket, -1, packet);
+}
+
+static void sendGameover()
+{
+	packet->address = ip;
+	SDL_strlcpy(packet->data, "Topo", packet->maxlen);
+	packet->len = 5;
+	SDLNet_UDP_Send(socket, -1, packet);
 }

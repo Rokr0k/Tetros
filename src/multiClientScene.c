@@ -5,6 +5,7 @@
 #include "multiClientScene.h"
 #include "font.h"
 #include "game.h"
+#include "multiAddress.h"
 
 static UDPsocket socket;
 static UDPpacket* packet;
@@ -132,6 +133,8 @@ void MultiClientScene_Update(double delta)
 				hosts[hostsC++] = packet->address;
 				break;
 			case 'e':
+				MultiPlayScene_SetPeer(packet->address);
+				Game_ChangeScene(MULTI_PLAY);
 				break;
 			}
 		}

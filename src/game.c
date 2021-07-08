@@ -10,6 +10,7 @@
 #include "multiConnectScene.h"
 #include "multiServerScene.h"
 #include "multiClientScene.h"
+#include "multiPlayScene.h"
 
 static SDL_Renderer* renderer;
 
@@ -28,13 +29,13 @@ void Game_Init(SDL_Window* window)
 	IMG_Init(IMG_INIT_PNG);
 	Mix_Init(MIX_INIT_OGG);
 	sceneId = TITLE;
-	SceneInit(NULL);
+	SceneInit();
 
 	Mix_OpenAudio(22050, MIX_DEFAULT_FORMAT, 1, 2048);
 	music = Mix_LoadMUS("res/backgroundmusic.ogg");
 	Mix_PlayMusic(music, -1);
 
-	SDL_SetRelativeMouseMode(SDL_TRUE);
+	//SDL_SetRelativeMouseMode(SDL_TRUE);
 	GC_Init();
 }
 
@@ -57,6 +58,9 @@ void Game_Event(SDL_Event* event)
 	case MULTI_CLIENT:
 		MultiClientScene_Event(event);
 		break;
+	case MULTI_PLAY:
+		MultiPlayScene_Event(event);
+		break;
 	}
 }
 
@@ -78,6 +82,9 @@ void Game_Update(double delta)
 		break;
 	case MULTI_CLIENT:
 		MultiClientScene_Update(delta);
+		break;
+	case MULTI_PLAY:
+		MultiPlayScene_Update(delta);
 		break;
 	}
 }
@@ -102,6 +109,9 @@ void Game_Render()
 		break;
 	case MULTI_CLIENT:
 		MultiClientScene_Render(renderer);
+		break;
+	case MULTI_PLAY:
+		MultiPlayScene_Render(renderer);
 		break;
 	}
 	SDL_RenderPresent(renderer);
@@ -146,6 +156,9 @@ static void SceneInit()
 	case MULTI_CLIENT:
 		MultiClientScene_Init(renderer);
 		break;
+	case MULTI_PLAY:
+		MultiPlayScene_Init(renderer);
+		break;
 	}
 }
 
@@ -167,6 +180,9 @@ static void SceneQuit()
 		break;
 	case MULTI_CLIENT:
 		MultiClientScene_Quit();
+		break;
+	case MULTI_PLAY:
+		MultiPlayScene_Quit();
 		break;
 	}
 }
