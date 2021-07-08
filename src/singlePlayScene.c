@@ -40,7 +40,6 @@ static const float gravity[30][2] = {
 	{ 1.f, 10.f },
 	{ 20.f, 20.f },
 };
-static const int scoreTable[20] = { 0, 100, 300, 500, 800, 1200, 400, 800, 1200, 1600, 600, 1200, 1800, 2400, 100, 200, 400, 150, 300, 600 };
 static const int lineCleared[20] = { 0, 1, 2, 3, 4, 4, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 0, 1, 2 };
 
 static int softDrop;
@@ -108,7 +107,7 @@ void SinglePlayScene_Init(SDL_Renderer* renderer)
 	SDL_SetTextureBlendMode(holdUnavTexture, SDL_BLENDMODE_BLEND);
 	scoreTexture = Font_GetTexture(renderer, "Score: 0", 0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE);
 	SDL_QueryTexture(scoreTexture, NULL, NULL, &scoreTextureW, &scoreTextureH);
-	levelTexture = Font_GetTexture(renderer, "Level: 0", 0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE);
+	levelTexture = Font_GetTexture(renderer, "Level: 1", 0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE);
 	SDL_QueryTexture(levelTexture, NULL, NULL, &levelTextureW, &levelTextureH);
 	holdDescTexture = Font_GetTexture(renderer, "Hold", 0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE);
 	previewDescTexture = Font_GetTexture(renderer, "Next", 0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE);
@@ -125,11 +124,11 @@ static void init()
 	leftCounter = 0;
 	nextWait = 0;
 	nextCounter = 0;
-	combo = 0;
+	combo = -1;
 	score = 0;
-	scoreChanged = 0;
+	scoreChanged = 1;
 	levelCnt = 0;
-	levelChanged = 0;
+	levelChanged = 1;
 	gameover = 0;
 	gameoverCounter = 0;
 	Tetris_Init();
@@ -317,17 +316,75 @@ void SinglePlayScene_Update(double delta)
 				Tetris_Lock();
 				if (Tetris_ClearFullLine())
 				{
+					combo++;
 					enum Technique technique = Tetris_GetTechnique();
-					score += scoreTable[technique] * (levelCnt / 10 + 1);
-					score += 50 * combo++ * (levelCnt / 10 + 1);
-					levelCnt += lineCleared[technique];
+					int scoreD = 0;
+					switch (technique & 0x07)
+					{
+					case Tech_Single:
+						if (technique & Tech_TSpin)
+						{
+							scoreD = 800;
+						}
+						else if (technique & Tech_TSpinMini)
+						{
+							scoreD = 200;
+						}
+						else
+						{
+							scoreD = 100;
+						}
+						break;
+					case Tech_Double:
+						if (technique & Tech_TSpin)
+						{
+							scoreD = 1200;
+						}
+						else if (technique & Tech_TSpinMini)
+						{
+							scoreD = 400;
+						}
+						else
+						{
+							scoreD = 300;
+						}
+						break;
+					case Tech_Triple:
+						if (technique & Tech_TSpin)
+						{
+							scoreD = 1600;
+						}
+						else
+						{
+							scoreD = 500;
+						}
+						break;
+					case Tech_Tetris:
+						scoreD = 800;
+						break;
+					}
+					if (technique & Tech_BackToBack)
+					{
+						scoreD = scoreD * 3 / 2;
+					}
+					scoreD += 50 * combo;
+					score += scoreD * (levelCnt / 10 + 1);
+					levelCnt += technique & 0x07;
 					nextWait = 1;
 					scoreChanged = 1;
 					levelChanged = 1;
 				}
 				else
 				{
-					combo = 0;
+					combo = -1;
+					enum Technique technique = Tetris_GetTechnique();
+					int scoreD = 0;
+					if (technique & Tech_TSpinMini)
+						scoreD = 100;
+					else if (technique & Tech_TSpin)
+						scoreD = 400;
+					score += scoreD * (levelCnt / 10 + 1);
+					scoreChanged = 1;
 					if (!Tetris_Next())
 					{
 						gameover = 1;
@@ -478,7 +535,7 @@ void SinglePlayScene_Render(SDL_Renderer* renderer)
 	if (levelChanged)
 	{
 		char levelText[19] = "Level: ";
-		SDL_itoa(levelCnt / 10, levelText + 7, 10);
+		SDL_itoa(levelCnt / 10 + 1, levelText + 7, 10);
 		SDL_DestroyTexture(levelTexture);
 		levelTexture = Font_GetTexture(renderer, levelText, 0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE);
 		SDL_QueryTexture(levelTexture, NULL, NULL, &levelTextureW, &levelTextureH);

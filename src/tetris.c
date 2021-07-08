@@ -276,7 +276,7 @@ static void setGhostY();
 
 static int lastMove;
 static int isTSpin;
-static int isMiniTSpin;
+static int isTSpinMini;
 static int backToBack;
 
 static enum Technique technique;
@@ -315,7 +315,7 @@ int Tetris_Matrix(int x, int y)
 		return -1;
 	}
 	int r = matrix[y][x];
-	if (!clearing)
+	if (!r && !clearing)
 	{
 		if (x >= currentX && x < currentX + size[currentType] && y >= ghostY && y < ghostY + size[currentType] && tetromino[currentType][currentState][y - ghostY][x - currentX])
 		{
@@ -412,7 +412,7 @@ void Tetris_Lock()
 		return;
 	}
 	isTSpin = 0;
-	isMiniTSpin = 0;
+	isTSpinMini = 0;
 	if (currentType == 5 && (lastMove == 1 || lastMove == 2))
 	{
 		int cnt = 0;
@@ -436,28 +436,28 @@ void Tetris_Lock()
 				if (!matrix[currentY + 2][currentX] || !matrix[currentY + 2][currentX + 2])
 				{
 					isTSpin = 0;
-					isMiniTSpin = 1;
+					isTSpinMini = 1;
 				}
 				break;
 			case 1:
 				if (!matrix[currentY][currentX+2] || !matrix[currentY + 2][currentX + 2])
 				{
 					isTSpin = 0;
-					isMiniTSpin = 1;
+					isTSpinMini = 1;
 				}
 				break;
 			case 2:
 				if (!matrix[currentY][currentX] || !matrix[currentY][currentX + 2])
 				{
 					isTSpin = 0;
-					isMiniTSpin = 1;
+					isTSpinMini = 1;
 				}
 				break;
 			case 3:
 				if (!matrix[currentY][currentX] || !matrix[currentY + 2][currentX])
 				{
 					isTSpin = 0;
-					isMiniTSpin = 1;
+					isTSpinMini = 1;
 				}
 				break;
 			}
@@ -513,45 +513,30 @@ int Tetris_ClearFullLine()
 		}
 	}
 
-	technique = Tech_None;
-	if (clearing)
+	int allclear = 1;
+	for (i = 0; i < 40; i++)
 	{
-		if (isTSpin)
+		for (j = 0; j < 10; j++)
 		{
-			if (backToBack)
-				technique = Tech_B_TSpin + cnt;
-			else
-				technique = Tech_TSpin + cnt;
-			if (clearing)
-				backToBack = 1;
-		}
-		else if (isMiniTSpin)
-		{
-			if (backToBack)
-				technique = Tech_B_TSpinM + cnt;
-			else
-				technique = Tech_TSpinM + cnt;
-			if (clearing)
-				backToBack = 1;
-		}
-		else
-		{
-			if (cnt < 4)
+			if (matrix[i][j])
 			{
-				technique = Tech_None + cnt;
-				if (clearing)
-					backToBack = 0;
-			}
-			else if (cnt == 4)
-			{
-				if (backToBack)
-					technique = Tech_B_Tetris;
-				else
-					technique = Tech_Tetris;
-				backToBack = 1;
+				allclear = 0;
+				break;
 			}
 		}
+		if (!allclear)
+			break;
 	}
+
+	technique = cnt;
+	if (isTSpin)
+		technique |= Tech_TSpin;
+	else if (isTSpinMini)
+		technique |= Tech_TSpinMini;
+	if (backToBack)
+		technique |= Tech_BackToBack;
+	if (allclear)
+		technique |= Tech_AllClear;
 
 	return clearing;
 }
@@ -625,7 +610,6 @@ int Tetris_Next()
 {
 	if (!Tetris_Verify(initialPos[previewQueue[previewI]][0], initialPos[previewQueue[previewI]][1], 0))
 	{
-		technique = Tech_Gameover;
 		return 0;
 	}
 	currentType = previewQueue[previewI];
@@ -651,7 +635,6 @@ int Tetris_Garbage()
 	{
 		if (matrix[39][i])
 		{
-			technique = Tech_Gameover;
 			return 0;
 		}
 	}

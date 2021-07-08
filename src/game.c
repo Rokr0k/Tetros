@@ -31,11 +31,11 @@ void Game_Init(SDL_Window* window)
 	sceneId = TITLE;
 	SceneInit();
 
-	Mix_OpenAudio(22050, MIX_DEFAULT_FORMAT, 1, 2048);
+	Mix_OpenAudio(22050, AUDIO_S16LSB, 1, 2048);
 	music = Mix_LoadMUS("res/backgroundmusic.ogg");
 	Mix_PlayMusic(music, -1);
 
-	//SDL_SetRelativeMouseMode(SDL_TRUE);
+	SDL_SetRelativeMouseMode(SDL_TRUE);
 	GC_Init();
 }
 

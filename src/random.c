@@ -7,9 +7,15 @@ static int gb;
 
 static void fillBag();
 
+static int inited;
+
 void Random_Init()
 {
-	srand((unsigned int)time(NULL));
+	if (!inited)
+	{
+		srand((unsigned int)time(NULL));
+		inited = 1;
+	}
 	fillBag();
 	gb = -1;
 }

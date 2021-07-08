@@ -134,6 +134,7 @@ void MultiClientScene_Update(double delta)
 				break;
 			case 'e':
 				MultiPlayScene_SetPeer(packet->address);
+				MultiPlayScene_IsClient(1);
 				Game_ChangeScene(MULTI_PLAY);
 				break;
 			}

@@ -35,6 +35,10 @@ static int nextWait;
 static const float nextDelay = 1.f / 30;
 static float nextCounter;
 
+static int garbageWait;
+static const float garbageInterval = 1.f / 15;
+static float garbageCounter;
+
 static int gameover;
 static const float gameoverDelay = 1.f / 90;
 static float gameoverCounter;
@@ -54,6 +58,7 @@ static const SDL_Rect tetrominosSplit[7] = {
 static SDL_Texture* holdUnavTexture;
 
 static int combo;
+static int comboGTable[11] = { 0, 1, 1, 2, 2, 3, 3, 4, 4, 4, 5 };
 
 static SDL_Texture* holdDescTexture;
 static SDL_Texture* previewDescTexture;
@@ -68,7 +73,7 @@ static UDPpacket* packet;
 
 static int peerMatrix[40][10];
 
-static int garbageC;
+static int garbage;
 
 static int win;
 static int quit;
@@ -77,15 +82,29 @@ static void sendCurrent();
 static void sendGarbages(int c);
 static void sendGameover();
 
+static int isClient;
+
 void MultiPlayScene_SetPeer(IPaddress address)
 {
 	ip = address;
 }
 
+void MultiPlayScene_IsClient(int yes)
+{
+	isClient = yes;
+}
+
 void MultiPlayScene_Init(SDL_Renderer* renderer)
 {
 	SDLNet_Init();
-	socket = SDLNet_UDP_Open(37646);
+	if (isClient)
+	{
+		socket = SDLNet_UDP_Open(37645);
+	}
+	else
+	{
+		socket = SDLNet_UDP_Open(37646);
+	}
 	packet = SDLNet_AllocPacket(512);
 	tileTexture = IMG_LoadTexture(renderer, "res/tile.png");
 	SDL_SetTextureBlendMode(tileTexture, SDL_BLENDMODE_BLEND);
@@ -109,12 +128,23 @@ static void init()
 	leftCounter = 0;
 	nextWait = 0;
 	nextCounter = 0;
-	combo = 0;
+	combo = -1;
 	gameover = 0;
 	gameoverCounter = 0;
-	garbageC = 0;
+	garbage = 0;
+	garbageCounter = 0;
+	garbageWait = 0;
 	win = 0;
 	quit = 0;
+	levelCnt = 0;
+	int i, j;
+	for (i = 0; i < 40; i++)
+	{
+		for (j = 0; j < 10; j++)
+		{
+			peerMatrix[i][j] = 0;
+		}
+	}
 	Tetris_Init();
 }
 
@@ -137,25 +167,30 @@ void MultiPlayScene_Event(SDL_Event* event)
 			rightFlag = 1;
 			rightCounter = -2.f;
 			lockCounter = 0;
+			sendCurrent();
 			break;
 		case SDLK_LEFT:
 			Tetris_Shift(-1);
 			leftFlag = 1;
 			leftCounter = -2.f;
 			lockCounter = 0;
+			sendCurrent();
 			break;
 		case SDLK_UP:
 		case SDLK_x:
 			Tetris_Rotate(1);
 			lockCounter = 0;
+			sendCurrent();
 			break;
 		case SDLK_LCTRL:
 		case SDLK_z:
 			Tetris_Rotate(-1);
 			lockCounter = 0;
+			sendCurrent();
 			break;
 		case SDLK_LSHIFT:
 			Tetris_Hold();
+			sendCurrent();
 			break;
 		case SDLK_SPACE:
 			Tetris_Harddrop();
@@ -191,23 +226,28 @@ void MultiPlayScene_Event(SDL_Event* event)
 			rightFlag = 1;
 			rightCounter = -2.f;
 			lockCounter = 0;
+			sendCurrent();
 			break;
 		case SDL_CONTROLLER_BUTTON_DPAD_LEFT:
 			Tetris_Shift(-1);
 			leftFlag = 1;
 			leftCounter = -2.f;
 			lockCounter = 0;
+			sendCurrent();
 			break;
 		case SDL_CONTROLLER_BUTTON_B:
 			Tetris_Rotate(1);
 			lockCounter = 0;
+			sendCurrent();
 			break;
 		case SDL_CONTROLLER_BUTTON_A:
 			Tetris_Rotate(-1);
 			lockCounter = 0;
+			sendCurrent();
 			break;
 		case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
 			Tetris_Hold();
+			sendCurrent();
 			break;
 		case SDL_CONTROLLER_BUTTON_DPAD_UP:
 			Tetris_Harddrop();
@@ -265,7 +305,7 @@ void MultiPlayScene_Update(double delta)
 				}
 				break;
 			case 'b':
-				garbageC += packet->data[4];
+				garbage += packet->data[4];
 				break;
 			case 'o':
 				gameover = 1;
@@ -299,26 +339,44 @@ void MultiPlayScene_Update(double delta)
 		if (nextWait)
 		{
 			nextCounter += (float)delta * 60 * nextDelay;
-			if (garbageC > 0 && nextCounter > .5f)
-			{
-				if (Tetris_Garbage())
-				{
-					gameover = 1;
-				}
-				nextCounter = 0;
-			}
 			if (nextCounter > 1.f)
 			{
 				nextCounter = 0;
 				nextWait = 0;
 				Tetris_PullEmptyLine();
 				sendCurrent();
+				garbageWait = 1;
+				fallCounter = 0;
+				lockCounter = 0;
+			}
+		}
+		else if (garbageWait)
+		{
+			if (garbage)
+			{
+				garbageCounter += (float)delta * 60 * garbageInterval;
+				while (garbageCounter > 1.f)
+				{
+					garbageCounter -= 1.f;
+					if (!Tetris_Garbage())
+					{
+						gameover = 1;
+						sendGameover();
+						break;
+					}
+					garbage--;
+					sendCurrent();
+				}
+			}
+			else
+			{
+				garbageWait = 0;
 				if (!Tetris_Next())
 				{
 					gameover = 1;
+					sendGameover();
 				}
-				fallCounter = 0;
-				lockCounter = 0;
+				sendCurrent();
 			}
 		}
 		else
@@ -341,63 +399,67 @@ void MultiPlayScene_Update(double delta)
 				Tetris_Lock();
 				if (Tetris_ClearFullLine())
 				{
+					combo++;
 					enum Technique technique = Tetris_GetTechnique();
 					levelCnt += lineCleared[technique];
-					switch (technique)
+					int garbageToSend = 0;
+					switch (technique & 0x07)
 					{
+					case Tech_Single:
+						if (technique & Tech_TSpin)
+						{
+							garbageToSend = 2;
+						}
+						else
+						{
+							garbageToSend = 0;
+						}
+						break;
 					case Tech_Double:
-						sendGarbages(1);
+						if (technique & Tech_TSpin)
+						{
+							garbageToSend = 4;
+						}
+						else if (technique & Tech_TSpinMini)
+						{
+							garbageToSend = 1;
+						}
+						else
+						{
+							garbageToSend = 1;
+						}
 						break;
 					case Tech_Triple:
-						sendGarbages(2);
+						if (technique & Tech_TSpin)
+						{
+							garbageToSend = 6;
+						}
+						else
+						{
+							garbageToSend = 2;
+						}
 						break;
 					case Tech_Tetris:
-						sendGarbages(4);
-						break;
-					case Tech_B_Tetris:
-						sendGarbages(5);
-						break;
-					case Tech_TSpin_Single:
-						sendGarbages(2);
-						break;
-					case Tech_TSpin_Double:
-						sendGarbages(4);
-						break;
-					case Tech_TSpin_Triple:
-						sendGarbages(6);
-						break;
-					case Tech_B_TSpin_Single:
-						sendGarbages(3);
-						break;
-					case Tech_B_TSpin_Double:
-						sendGarbages(5);
-						break;
-					case Tech_B_TSpin_Triple:
-						sendGarbages(7);
-						break;
-					case Tech_TSpinM_Single:
-						sendGarbages(1);
-						break;
-					case Tech_TSpinM_Double:
-						sendGarbages(3);
-						break;
-					case Tech_B_TSpinM_Single:
-						sendGarbages(2);
-						break;
-					case Tech_B_TSpinM_Double:
-						sendGarbages(4);
+						garbageToSend = 4;
 						break;
 					}
+					if (technique & Tech_BackToBack)
+					{
+						garbageToSend += 1;
+					}
+					if (technique & Tech_AllClear)
+					{
+						garbageToSend += 4;
+					}
+					garbageToSend += comboGTable[SDL_min(combo, 10)];
+					sendGarbages(garbageToSend);
 					nextWait = 1;
 				}
 				else
 				{
-					combo = 0;
-					if (!Tetris_Next())
-					{
-						gameover = 1;
-					}
+					combo = -1;
 					fallCounter = 0;
+					garbageWait = 1;
 				}
 				sendCurrent();
 			}
@@ -480,6 +542,9 @@ void MultiPlayScene_Render(SDL_Renderer* renderer)
 				case 7:
 					SDL_SetTextureColorMod(tileTexture, 0xFF, 0x00, 0x00);
 					break;
+				case 8:
+					SDL_SetTextureColorMod(tileTexture, 0x80, 0x80, 0x80);
+					break;
 				case 11:
 					SDL_SetTextureColorMod(tileTexture, 0x00, 0x80, 0x80);
 					break;
@@ -554,6 +619,9 @@ void MultiPlayScene_Render(SDL_Renderer* renderer)
 					break;
 				case 7:
 					SDL_SetTextureColorMod(tileTexture, 0xFF, 0x00, 0x00);
+					break;
+				case 8:
+					SDL_SetTextureColorMod(tileTexture, 0x80, 0x80, 0x80);
 					break;
 				case 11:
 					SDL_SetTextureColorMod(tileTexture, 0x00, 0x80, 0x80);
@@ -659,20 +727,28 @@ static void sendCurrent()
 	{
 		for (j = 0; j < 10; j++)
 		{
-			packet->data[i + 10 + j + 4] = Tetris_Matrix(i, j);
+			packet->data[i * 10 + j + 4] = Tetris_Matrix(j, i);
 		}
 	}
-	packet->len = 404;
+	packet->len = 405;
 	SDLNet_UDP_Send(socket, -1, packet);
 }
 
 static void sendGarbages(int c)
 {
-	packet->address = ip;
-	SDL_strlcpy(packet->data, "Topb", packet->maxlen);
-	packet->data[4] = c;
-	packet->len = 6;
-	SDLNet_UDP_Send(socket, -1, packet);
+	while (garbage > 0 && c > 0)
+	{
+		garbage--;
+		c--;
+	}
+	if (c > 0)
+	{
+		packet->address = ip;
+		SDL_strlcpy(packet->data, "Topb", packet->maxlen);
+		packet->data[4] = c;
+		packet->len = 6;
+		SDLNet_UDP_Send(socket, -1, packet);
+	}
 }
 
 static void sendGameover()
