@@ -3,7 +3,7 @@
 
 enum SceneType
 {
-	TITLE, SINGLE_PLAY, MULTI_CONNECT, MULTI_SERVER, MULTI_CLIENT, MULTI_PLAY
+	TITLE, PLAY
 };
 
 void Game_Init(SDL_Window* window);

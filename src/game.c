@@ -7,11 +7,7 @@
 #include "game.h"
 #include "gamecontroller.h"
 #include "titleScene.h"
-#include "singlePlayScene.h"
-#include "multiConnectScene.h"
-#include "multiServerScene.h"
-#include "multiClientScene.h"
-#include "multiPlayScene.h"
+#include "playScene.h"
 
 static SDL_Renderer* renderer;
 
@@ -47,20 +43,8 @@ void Game_Event(SDL_Event* event)
 	case TITLE:
 		TitleScene_Event(event);
 		break;
-	case SINGLE_PLAY:
-		SinglePlayScene_Event(event);
-		break;
-	case MULTI_CONNECT:
-		MultiConnectScene_Event(event);
-		break;
-	case MULTI_SERVER:
-		MultiServerScene_Event(event);
-		break;
-	case MULTI_CLIENT:
-		MultiClientScene_Event(event);
-		break;
-	case MULTI_PLAY:
-		MultiPlayScene_Event(event);
+	case PLAY:
+		PlayScene_Event(event);
 		break;
 	}
 }
@@ -72,20 +56,8 @@ void Game_Update(double delta)
 	case TITLE:
 		TitleScene_Update(delta);
 		break;
-	case SINGLE_PLAY:
-		SinglePlayScene_Update(delta);
-		break;
-	case MULTI_CONNECT:
-		MultiConnectScene_Update(delta);
-		break;
-	case MULTI_SERVER:
-		MultiServerScene_Update(delta);
-		break;
-	case MULTI_CLIENT:
-		MultiClientScene_Update(delta);
-		break;
-	case MULTI_PLAY:
-		MultiPlayScene_Update(delta);
+	case PLAY:
+		PlayScene_Update(delta);
 		break;
 	}
 }
@@ -99,20 +71,8 @@ void Game_Render()
 	case TITLE:
 		TitleScene_Render(renderer);
 		break;
-	case SINGLE_PLAY:
-		SinglePlayScene_Render(renderer);
-		break;
-	case MULTI_CONNECT:
-		MultiConnectScene_Render(renderer);
-		break;
-	case MULTI_SERVER:
-		MultiServerScene_Render(renderer);
-		break;
-	case MULTI_CLIENT:
-		MultiClientScene_Render(renderer);
-		break;
-	case MULTI_PLAY:
-		MultiPlayScene_Render(renderer);
+	case PLAY:
+		PlayScene_Render(renderer);
 		break;
 	}
 	SDL_RenderPresent(renderer);
@@ -145,20 +105,8 @@ static void SceneInit()
 	case TITLE:
 		TitleScene_Init(renderer);
 		break;
-	case SINGLE_PLAY:
-		SinglePlayScene_Init(renderer);
-		break;
-	case MULTI_CONNECT:
-		MultiConnectScene_Init(renderer);
-		break;
-	case MULTI_SERVER:
-		MultiServerScene_Init(renderer);
-		break;
-	case MULTI_CLIENT:
-		MultiClientScene_Init(renderer);
-		break;
-	case MULTI_PLAY:
-		MultiPlayScene_Init(renderer);
+	case PLAY:
+		PlayScene_Init(renderer);
 		break;
 	}
 }
@@ -170,20 +118,8 @@ static void SceneQuit()
 	case TITLE:
 		TitleScene_Quit();
 		break;
-	case SINGLE_PLAY:
-		SinglePlayScene_Quit();
-		break;
-	case MULTI_CONNECT:
-		MultiConnectScene_Quit();
-		break;
-	case MULTI_SERVER:
-		MultiServerScene_Quit();
-		break;
-	case MULTI_CLIENT:
-		MultiClientScene_Quit();
-		break;
-	case MULTI_PLAY:
-		MultiPlayScene_Quit();
+	case PLAY:
+		PlayScene_Quit();
 		break;
 	}
 }

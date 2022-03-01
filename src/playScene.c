@@ -1,7 +1,7 @@
 #include <SDL.h>
 #include <SDL_image.h>
 #include <SDL_ttf.h>
-#include "singlePlayScene.h"
+#include "playScene.h"
 #include "font.h"
 #include "tetris.h"
 #include "game.h"
@@ -96,7 +96,7 @@ static int levelChanged;
 
 static void init();
 
-void SinglePlayScene_Init(SDL_Renderer* renderer)
+void PlayScene_Init(SDL_Renderer* renderer)
 {
 	init();
 	tileTexture = IMG_LoadTexture(renderer, "res/tile.png");
@@ -134,7 +134,7 @@ static void init()
 	Tetris_Init();
 }
 
-void SinglePlayScene_Event(SDL_Event* event)
+void PlayScene_Event(SDL_Event* event)
 {
 	switch (event->type)
 	{
@@ -264,7 +264,7 @@ void SinglePlayScene_Event(SDL_Event* event)
 	}
 }
 
-void SinglePlayScene_Update(double delta)
+void PlayScene_Update(double delta)
 {
 	if (gameover)
 	{
@@ -417,7 +417,7 @@ void SinglePlayScene_Update(double delta)
 	}
 }
 
-void SinglePlayScene_Render(SDL_Renderer* renderer)
+void PlayScene_Render(SDL_Renderer* renderer)
 {
 	int w, h;
 	SDL_GetRendererOutputSize(renderer, &w, &h);
@@ -563,7 +563,7 @@ void SinglePlayScene_Render(SDL_Renderer* renderer)
 	SDL_RenderCopy(renderer, scoreTexture, NULL, &rect);
 }
 
-void SinglePlayScene_Quit()
+void PlayScene_Quit()
 {
 	SDL_DestroyTexture(tileTexture);
 	SDL_DestroyTexture(tetrominosTexture);

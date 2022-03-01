@@ -8,13 +8,9 @@
 static SDL_Texture* titleTexture;
 static SDL_Rect titleRect;
 
-static SDL_Texture* singleTexture;
-static SDL_Rect singleRect;
-static int singleHover;
-
-static SDL_Texture* multiTexture;
-static SDL_Rect multiRect;
-static int multiHover;
+static SDL_Texture* playTexture;
+static SDL_Rect playRect;
+static int playHover;
 
 static SDL_Texture* cursorTexture;
 static SDL_Rect cursorRect;
@@ -25,8 +21,7 @@ static void quitGame();
 void TitleScene_Init(SDL_Renderer* renderer)
 {
 	titleTexture = IMG_LoadTexture(renderer, "res/title.png");
-	singleTexture = Font_GetTexture(renderer, "Single", 0x00, 0x00, 0x00, SDL_ALPHA_OPAQUE);
-	multiTexture = Font_GetTexture(renderer, "Multi", 0x00, 0x00, 0x00, SDL_ALPHA_OPAQUE);
+	playTexture = Font_GetTexture(renderer, "Play", 0x00, 0x00, 0x00, SDL_ALPHA_OPAQUE);
 	cursorTexture = IMG_LoadTexture(renderer, "res/cursor.png");
 	cursorX = 640;
 	cursorY = 360;
@@ -51,13 +46,9 @@ void TitleScene_Event(SDL_Event* event)
 	case SDL_MOUSEBUTTONDOWN:
 		if (event->button.button == SDL_BUTTON_LEFT)
 		{
-			if (singleHover)
+			if (playHover)
 			{
-				Game_ChangeScene(SINGLE_PLAY);
-			}
-			else if (multiHover)
-			{
-				Game_ChangeScene(MULTI_CONNECT);
+				Game_ChangeScene(PLAY);
 			}
 		}
 		break;
@@ -91,13 +82,9 @@ void TitleScene_Event(SDL_Event* event)
 		switch (event->cbutton.button)
 		{
 		case SDL_CONTROLLER_BUTTON_A:
-			if (singleHover)
+			if (playHover)
 			{
-				Game_ChangeScene(SINGLE_PLAY);
-			}
-			else if (multiHover)
-			{
-				Game_ChangeScene(MULTI_CONNECT);
+				Game_ChangeScene(PLAY);
 			}
 			break;
 		case SDL_CONTROLLER_BUTTON_B:
@@ -109,8 +96,7 @@ void TitleScene_Event(SDL_Event* event)
 
 void TitleScene_Update(double delta)
 {
-	singleHover = cursorRect.x >= singleRect.x && cursorRect.x < singleRect.x + singleRect.w && cursorRect.y >= singleRect.y && cursorRect.y < singleRect.y + singleRect.h;
-	multiHover = cursorRect.x >= multiRect.x && cursorRect.x < multiRect.x + multiRect.w && cursorRect.y >= multiRect.y && cursorRect.y < multiRect.y + multiRect.h;
+	playHover = cursorRect.x >= playRect.x && cursorRect.x < playRect.x + playRect.w && cursorRect.y >= playRect.y && cursorRect.y < playRect.y + playRect.h;
 }
 
 void TitleScene_Render(SDL_Renderer* renderer)
@@ -123,11 +109,11 @@ void TitleScene_Render(SDL_Renderer* renderer)
 	titleRect.y = h / 3 - titleRect.h / 2;
 	SDL_RenderCopy(renderer, titleTexture, NULL, &titleRect);
 
-	singleRect.w = w * 300 / 1280;
-	singleRect.h = h * 100 / 720;
-	singleRect.x = w / 3 - singleRect.w / 2;
-	singleRect.y = h * 2 / 3 - singleRect.h / 2;
-	if (singleHover)
+	playRect.w = w * 300 / 1280;
+	playRect.h = h * 100 / 720;
+	playRect.x = w / 2 - playRect.w / 2;
+	playRect.y = h * 2 / 3 - playRect.h / 2;
+	if (playHover)
 	{
 		SDL_SetRenderDrawColor(renderer, 0x9F, 0x9F, 0x9F, SDL_ALPHA_OPAQUE);
 	}
@@ -135,23 +121,8 @@ void TitleScene_Render(SDL_Renderer* renderer)
 	{
 		SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE);
 	}
-	SDL_RenderFillRect(renderer, &singleRect);
-	SDL_RenderCopy(renderer, singleTexture, NULL, &singleRect);
-
-	multiRect.w = w * 300 / 1280;
-	multiRect.h = h * 100 / 720;
-	multiRect.x = w * 2 / 3 - multiRect.w / 2;
-	multiRect.y = h * 2 / 3 - multiRect.h / 2;
-	if (multiHover)
-	{
-		SDL_SetRenderDrawColor(renderer, 0x9F, 0x9F, 0x9F, SDL_ALPHA_OPAQUE);
-	}
-	else
-	{
-		SDL_SetRenderDrawColor(renderer, 0xFF, 0xFF, 0xFF, SDL_ALPHA_OPAQUE);
-	}
-	SDL_RenderFillRect(renderer, &multiRect);
-	SDL_RenderCopy(renderer, multiTexture, NULL, &multiRect);
+	SDL_RenderFillRect(renderer, &playRect);
+	SDL_RenderCopy(renderer, playTexture, NULL, &playRect);
 
 	cursorRect.w = 40 * w / 1280;
 	cursorRect.h = 60 * h / 720;
@@ -163,8 +134,7 @@ void TitleScene_Render(SDL_Renderer* renderer)
 void TitleScene_Quit()
 {
 	SDL_DestroyTexture(titleTexture);
-	SDL_DestroyTexture(singleTexture);
-	SDL_DestroyTexture(multiTexture);
+	SDL_DestroyTexture(playTexture);
 	SDL_DestroyTexture(cursorTexture);
 }
 
