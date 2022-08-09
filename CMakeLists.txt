@@ -2,22 +2,19 @@
 
 project ("tetros")
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/sdl2)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(SDL2 REQUIRED sdl2)
+pkg_check_modules(SDL2_IMAGE REQUIRED SDL2_image)
+pkg_check_modules(SDL2_MIXER REQUIRED SDL2_mixer)
+pkg_check_modules(SDL2_TTF REQUIRED SDL2_ttf)
 
-find_package (SDL2 REQUIRED)
-find_package (SDL2_image REQUIRED)
-find_package (SDL2_mixer REQUIRED)
-find_package (SDL2_ttf REQUIRED)
+set (C_SOURCES "src/main.c" "src/game.c" "src/titleScene.c" "src/playScene.c" "src/tetris.c" "src/random.c" "src/font.c" "src/gamecontroller.c" )
+set (C_HEADERS "src/game.h" "src/titleScene.h" "src/playScene.h" "src/tetris.h" "src/random.h" "src/font.h" "src/gamecontroller.h")
+set (RESOURCES "res/title.png" "res/tile.png" "res/tetrominos.png" "res/holdunav.png" "res/backgroundmusic.ogg" "res/AtariClassic.ttf" "res/gamecontrollerdb.txt")
 
-set (C_FILES "src/main.c" "src/game.c" "src/titleScene.c" "src/playScene.c" "src/tetris.c" "src/random.c" "src/font.c" "src/game.h" "src/titleScene.h" "src/playScene.h" "src/tetris.h" "src/random.h" "src/font.h" "src/gamecontroller.h" "src/gamecontroller.c" )
-set (RESOURCES "res/title.png" "res/cursor.png" "res/tile.png" "res/tetrominos.png" "res/holdunav.png" "res/backgroundmusic.ogg" "res/AtariClassic.ttf" "res/gamecontrollerdb.txt")
+add_executable (${PROJECT_NAME} ${C_SOURCES} ${C_HEADERS})
 
-if (${CMAKE_BUILD_TYPE} MATCHES "Debug")
-	add_executable (${PROJECT_NAME} ${C_FILES})
-else ()
-	add_executable (${PROJECT_NAME} WIN32 MACOSX_BUNDLE ${C_FILES})
-endif ()
-
-target_link_libraries (${PROJECT_NAME} SDL2::Main SDL2::Image SDL2::Mixer SDL2::TTF)
+target_include_directories (${PROJECT_NAME} PRIVATE ${SDL2_INCLUDE_DIRS} ${SDL2_IMAGE_INCLUDE_DIRS} ${SDL2_MIXER_INCLUDE_DIRS} ${SDL2_TTF_INCLUDE_DIRS})
+target_link_libraries (${PROJECT_NAME} PRIVATE ${SDL2_LIBRARIES} ${SDL2_IMAGE_LIBRARIES} ${SDL2_MIXER_LIBRARIES} ${SDL2_TTF_LIBRARIES})
 
 file (COPY ${RESOURCES} DESTINATION "${CMAKE_BINARY_DIR}/res")
