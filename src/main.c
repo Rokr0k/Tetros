@@ -3,16 +3,11 @@
 #include <SDL_ttf.h>
 #include "game.h"
 
-
-int main(int argc, char* args[])
+int main(int argc, char *args[])
 {
 	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER);
 
-#ifdef _DEBUG
-	SDL_Window* window = SDL_CreateWindow("Tetros", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1280, 720, 0);
-#else
-	SDL_Window* window = SDL_CreateWindow("Tetros", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1920, 1080, SDL_WINDOW_FULLSCREEN);
-#endif
+	SDL_Window *window = SDL_CreateWindow("Tetros", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 1920, 1080, SDL_WINDOW_FULLSCREEN);
 
 	Game_Init(window);
 

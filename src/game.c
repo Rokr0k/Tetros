@@ -9,16 +9,16 @@
 #include "titleScene.h"
 #include "playScene.h"
 
-static SDL_Renderer* renderer;
+static SDL_Renderer *renderer;
 
 static enum SceneType sceneId;
 
-static Mix_Music* music;
+static Mix_Music *music;
 
 static void SceneInit();
 static void SceneQuit();
 
-void Game_Init(SDL_Window* window)
+void Game_Init(SDL_Window *window)
 {
 	renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 	SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
@@ -36,7 +36,7 @@ void Game_Init(SDL_Window* window)
 	GC_Init();
 }
 
-void Game_Event(SDL_Event* event)
+void Game_Event(SDL_Event *event)
 {
 	switch (sceneId)
 	{

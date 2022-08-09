@@ -1,7 +1,7 @@
 #include <SDL.h>
 #include "gamecontroller.h"
 
-static SDL_GameController* controller;
+static SDL_GameController *controller;
 
 void GC_Init()
 {
@@ -17,7 +17,7 @@ void GC_Init()
 	}
 }
 
-SDL_GameController* GC_GetController()
+SDL_GameController *GC_GetController()
 {
 	return controller;
 }

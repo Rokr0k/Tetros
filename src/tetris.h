@@ -25,11 +25,15 @@ int Tetris_Garbage();
 
 enum Technique
 {
-	Tech_None, Tech_Single, Tech_Double, Tech_Triple, Tech_Tetris,
-	Tech_TSpin=0x08,
-	Tech_TSpinMini=0x10,
-	Tech_BackToBack=0x20,
-	Tech_AllClear=0x40
+	Tech_None,
+	Tech_Single,
+	Tech_Double,
+	Tech_Triple,
+	Tech_Tetris,
+	Tech_TSpin = 0x08,
+	Tech_TSpinMini = 0x10,
+	Tech_BackToBack = 0x20,
+	Tech_AllClear = 0x40
 };
 enum Technique Tetris_GetTechnique();
 

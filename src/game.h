@@ -3,12 +3,13 @@
 
 enum SceneType
 {
-	TITLE, PLAY
+	TITLE,
+	PLAY
 };
 
-void Game_Init(SDL_Window* window);
+void Game_Init(SDL_Window *window);
 
-void Game_Event(SDL_Event* event);
+void Game_Event(SDL_Event *event);
 void Game_Update(double delta);
 void Game_Render();
 

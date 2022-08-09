@@ -6,41 +6,41 @@
 #include "tetris.h"
 #include "game.h"
 
-static void setRectPos(SDL_Rect* rect, int x, int y, int w, int h);
+static void setRectPos(SDL_Rect *rect, int x, int y, int w, int h);
 
 static const float gravity[30][2] = {
-	{ 1.f / 48, 10.f / 48 },
-	{ 1.f / 43, 10.f / 43 },
-	{ 1.f / 38, 10.f / 38 },
-	{ 1.f / 33, 10.f / 33 },
-	{ 1.f / 28, 10.f / 28 },
-	{ 1.f / 23, 10.f / 23 },
-	{ 1.f / 18, 10.f / 18 },
-	{ 1.f / 13, 10.f / 13 },
-	{ 1.f / 8, 10.f / 8 },
-	{ 1.f / 6, 10.f / 6 },
-	{ 1.f / 5, 10.f / 5 },
-	{ 1.f / 5, 10.f / 5 },
-	{ 1.f / 5, 10.f / 5 },
-	{ 1.f / 5, 10.f / 5 },
-	{ 1.f / 4, 10.f / 4 },
-	{ 1.f / 4, 10.f / 4 },
-	{ 1.f / 4, 10.f / 4 },
-	{ 1.f / 4, 10.f / 4 },
-	{ 1.f / 3, 10.f / 3 },
-	{ 1.f / 3, 10.f / 3 },
-	{ 1.f / 3, 10.f / 3 },
-	{ 1.f / 3, 10.f / 3 },
-	{ 1.f / 2, 10.f / 2 },
-	{ 1.f / 2, 10.f / 2 },
-	{ 1.f / 2, 10.f / 2 },
-	{ 1.f / 2, 10.f / 2 },
-	{ 1.f, 10.f },
-	{ 1.f, 10.f },
-	{ 1.f, 10.f },
-	{ 20.f, 20.f },
+	{1.f / 48, 10.f / 48},
+	{1.f / 43, 10.f / 43},
+	{1.f / 38, 10.f / 38},
+	{1.f / 33, 10.f / 33},
+	{1.f / 28, 10.f / 28},
+	{1.f / 23, 10.f / 23},
+	{1.f / 18, 10.f / 18},
+	{1.f / 13, 10.f / 13},
+	{1.f / 8, 10.f / 8},
+	{1.f / 6, 10.f / 6},
+	{1.f / 5, 10.f / 5},
+	{1.f / 5, 10.f / 5},
+	{1.f / 5, 10.f / 5},
+	{1.f / 5, 10.f / 5},
+	{1.f / 4, 10.f / 4},
+	{1.f / 4, 10.f / 4},
+	{1.f / 4, 10.f / 4},
+	{1.f / 4, 10.f / 4},
+	{1.f / 3, 10.f / 3},
+	{1.f / 3, 10.f / 3},
+	{1.f / 3, 10.f / 3},
+	{1.f / 3, 10.f / 3},
+	{1.f / 2, 10.f / 2},
+	{1.f / 2, 10.f / 2},
+	{1.f / 2, 10.f / 2},
+	{1.f / 2, 10.f / 2},
+	{1.f, 10.f},
+	{1.f, 10.f},
+	{1.f, 10.f},
+	{20.f, 20.f},
 };
-static const int lineCleared[20] = { 0, 1, 2, 3, 4, 4, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 0, 1, 2 };
+static const int lineCleared[20] = {0, 1, 2, 3, 4, 4, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 0, 1, 2};
 
 static int softDrop;
 static float fallCounter;
@@ -63,8 +63,8 @@ static int gameover;
 static const float gameoverDelay = 1.f / 90;
 static float gameoverCounter;
 
-static SDL_Texture* tileTexture;
-static SDL_Texture* tetrominosTexture;
+static SDL_Texture *tileTexture;
+static SDL_Texture *tetrominosTexture;
 static const SDL_Rect tetrominosSplit[7] = {
 	{0, 64, 256, 64},
 	{256, 0, 192, 128},
@@ -75,28 +75,28 @@ static const SDL_Rect tetrominosSplit[7] = {
 	{1152, 0, 192, 128},
 };
 
-static SDL_Texture* holdUnavTexture;
+static SDL_Texture *holdUnavTexture;
 
 static int combo;
 
-static SDL_Texture* holdDescTexture;
-static SDL_Texture* previewDescTexture;
+static SDL_Texture *holdDescTexture;
+static SDL_Texture *previewDescTexture;
 
 static int score;
-static SDL_Texture* scoreTexture;
+static SDL_Texture *scoreTexture;
 static int scoreTextureW;
 static int scoreTextureH;
 static int scoreChanged;
 
 static int levelCnt;
-static SDL_Texture* levelTexture;
+static SDL_Texture *levelTexture;
 static int levelTextureW;
 static int levelTextureH;
 static int levelChanged;
 
 static void init();
 
-void PlayScene_Init(SDL_Renderer* renderer)
+void PlayScene_Init(SDL_Renderer *renderer)
 {
 	init();
 	tileTexture = IMG_LoadTexture(renderer, "res/tile.png");
@@ -134,7 +134,7 @@ static void init()
 	Tetris_Init();
 }
 
-void PlayScene_Event(SDL_Event* event)
+void PlayScene_Event(SDL_Event *event)
 {
 	switch (event->type)
 	{
@@ -417,7 +417,7 @@ void PlayScene_Update(double delta)
 	}
 }
 
-void PlayScene_Render(SDL_Renderer* renderer)
+void PlayScene_Render(SDL_Renderer *renderer)
 {
 	int w, h;
 	SDL_GetRendererOutputSize(renderer, &w, &h);
@@ -431,9 +431,9 @@ void PlayScene_Render(SDL_Renderer* renderer)
 			if (gameover)
 			{
 				int matrix = Tetris_Matrix(i, j);
-				if(matrix == -1)
+				if (matrix == -1)
 					SDL_SetTextureColorMod(tileTexture, 0xFF, 0xFF, 0xFF);
-				else if(matrix == 0)
+				else if (matrix == 0)
 					SDL_SetTextureColorMod(tileTexture, 0x00, 0x00, 0x00);
 				else
 					SDL_SetTextureColorMod(tileTexture, 0x80, 0x80, 0x80);
@@ -543,7 +543,7 @@ void PlayScene_Render(SDL_Renderer* renderer)
 	}
 	rect.h = h / 10;
 	rect.w = levelTextureW * rect.h / levelTextureH / 3;
-	rect.x = h/22;
+	rect.x = h / 22;
 	rect.y = h * 4 / 5 - rect.h / 2;
 	SDL_RenderCopy(renderer, levelTexture, NULL, &rect);
 
@@ -558,7 +558,7 @@ void PlayScene_Render(SDL_Renderer* renderer)
 	}
 	rect.h = h / 10;
 	rect.w = scoreTextureW * rect.h / scoreTextureH / 3;
-	rect.x = h/22;
+	rect.x = h / 22;
 	rect.y = h * 9 / 10 - rect.h / 2;
 	SDL_RenderCopy(renderer, scoreTexture, NULL, &rect);
 }
@@ -574,7 +574,7 @@ void PlayScene_Quit()
 	SDL_DestroyTexture(previewDescTexture);
 }
 
-static void setRectPos(SDL_Rect* rect, int x, int y, int w, int h)
+static void setRectPos(SDL_Rect *rect, int x, int y, int w, int h)
 {
 	rect->w = rect->h = h / 22;
 	rect->x = w / 2 + rect->w * (x - 5);
